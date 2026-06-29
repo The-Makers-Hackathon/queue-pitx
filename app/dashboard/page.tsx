@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useBuses, useQueues } from "@/lib/hooks";
 import { computeRecommendation } from "@/lib/algorithms";
@@ -12,6 +13,7 @@ import RecommendationCard from "@/components/RecommendationCard";
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { buses, loading: busesLoading } = useBuses();
   const { queues, loading: queuesLoading } = useQueues();
   const [tab, setTab] = useState<"queues" | "map">("queues");
@@ -31,9 +33,20 @@ export default function DashboardPage() {
           borderBottom: "1px solid #E5E5EA",
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#22469D", letterSpacing: "-.3px" }}>
-          QueuePITX
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={() => router.push("/")}
+            style={{
+              background: "none", border: "none", fontSize: 20, cursor: "pointer",
+              padding: 0, color: "#22469D",
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#22469D", letterSpacing: "-.3px" }}>
+            QueuePITX
+          </h1>
+        </div>
 
         {/* Tab bar */}
         <div
