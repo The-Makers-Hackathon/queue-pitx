@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useTracker, usePublishPosition, useSetQueueValue } from "@/lib/hooks";
+import { getDb, ref, remove } from "@/lib/firebase";
+import { useTracker, usePublishPosition, useSetQueueValue, useRemoveBusData } from "@/lib/hooks";
 import { ROUTES_META } from "@/lib/design";
 import { CAPS } from "@/lib/design";
 import type { CapacityStatus } from "@/lib/design";
@@ -16,6 +17,7 @@ export default function TrackPage() {
   const { position, error, watching, startTracking, stopTracking } = useTracker();
   const { publish } = usePublishPosition();
   const { setCapacityStatus } = useSetQueueValue(routeId);
+  const { removeBus } = useRemoveBusData();
   const [capacity, setCapacity] = useState<CapacityStatus>("seats");
   const prevPosRef = useRef<GeolocationPosition | null>(null);
   const [publishedCount, setPublishedCount] = useState(0);
@@ -28,6 +30,17 @@ export default function TrackPage() {
       setPublishedCount((c) => c + 1);
     }
   }, [position, watching, busId, routeId, publish]);
+
+  const handleStart = () => {
+    setCapacityStatus(capacity);
+    startTracking();
+  };
+
+  const handleStop = () => {
+    removeBus(busId);
+    remove(ref(getDb(), `queues/${routeId}/capacity_status`));
+    stopTracking();
+  };
 
   // Handle capacity button press
   const handleCapacity = (status: CapacityStatus) => {
@@ -82,6 +95,31 @@ export default function TrackPage() {
                 <option key={i + 1} value={String(i + 1)}>Bus {i + 1}</option>
               ))}
             </select>
+          </div>
+        </div>
+        
+        {/* Capacity status */}
+        <div style={{ marginBottom: 16 }}>
+          <Label style={{ display: "block", marginBottom: 8 }}>Bus Capacity</Label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {CAPS.map((cap) => (
+              <button
+                key={cap.id}
+                onClick={() => handleCapacity(cap.id)}
+                style={{
+                  flex: 1, padding: "12px 8px", borderRadius: 12,
+                  border: capacity === cap.id ? `2px solid ${cap.color}` : "2px solid #E5E5EA",
+                  background: capacity === cap.id ? cap.bg : "#fff",
+                  cursor: "pointer", textAlign: "center",
+                  transition: "all .15s",
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 4 }}>{cap.icon}</div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#1C1C1E", lineHeight: 1.2 }}>
+                  {cap.label}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -141,7 +179,7 @@ export default function TrackPage() {
           )}
 
           <button
-            onClick={watching ? stopTracking : startTracking}
+            onClick={watching ? handleStop : handleStart}
             style={{
               width: "100%", padding: "14px", border: "none", borderRadius: 12,
               fontSize: 15, fontWeight: 700, cursor: "pointer",
@@ -152,31 +190,6 @@ export default function TrackPage() {
           >
             {watching ? "Stop Broadcasting" : "Start Broadcasting"}
           </button>
-        </div>
-
-        {/* Capacity status */}
-        <div style={{ marginBottom: 16 }}>
-          <Label style={{ display: "block", marginBottom: 8 }}>Bus Capacity</Label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {CAPS.map((cap) => (
-              <button
-                key={cap.id}
-                onClick={() => handleCapacity(cap.id)}
-                style={{
-                  flex: 1, padding: "12px 8px", borderRadius: 12,
-                  border: capacity === cap.id ? `2px solid ${cap.color}` : "2px solid #E5E5EA",
-                  background: capacity === cap.id ? cap.bg : "#fff",
-                  cursor: "pointer", textAlign: "center",
-                  transition: "all .15s",
-                }}
-              >
-                <div style={{ fontSize: 20, marginBottom: 4 }}>{cap.icon}</div>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#1C1C1E", lineHeight: 1.2 }}>
-                  {cap.label}
-                </p>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Published count */}
