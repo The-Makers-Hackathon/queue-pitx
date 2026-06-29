@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function LandingPage() {
   const router = useRouter();
+  const { user } = useAuth();
 
   return (
     <div
@@ -14,7 +16,6 @@ export default function LandingPage() {
         padding: "40px 24px", position: "relative", overflow: "hidden",
       }}
     >
-      {/* Decorative circles */}
       <div
         style={{
           position: "absolute", top: -60, right: -60,
@@ -30,7 +31,6 @@ export default function LandingPage() {
         }}
       />
 
-      {/* Logo / Title */}
       <div style={{ textAlign: "center", marginBottom: 48, animation: "fade-up .4s ease" }}>
         <div
           style={{
@@ -60,7 +60,6 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* Role buttons */}
       <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 320, marginInline: "auto", width: "100%" }}>
         <button
           onClick={() => router.push("/dashboard")}
@@ -83,7 +82,7 @@ export default function LandingPage() {
         </button>
 
         <button
-          onClick={() => router.push("/track")}
+          onClick={() => router.push(user ? "/track" : "/login?redirect=/track")}
           style={{
             padding: "18px 24px", borderRadius: 16, background: "#fff",
             border: "none", cursor: "pointer", textAlign: "left",
@@ -103,7 +102,7 @@ export default function LandingPage() {
         </button>
 
         <button
-          onClick={() => router.push("/admin")}
+          onClick={() => router.push(user ? "/admin" : "/login?redirect=/admin")}
           style={{
             padding: "12px 24px", borderRadius: 14,
             background: "rgba(255,255,255,.1)", backdropFilter: "blur(8px)",

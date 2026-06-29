@@ -7,11 +7,14 @@ import { useTracker, usePublishPosition, useSetQueueValue, useRemoveBusData } fr
 import { ROUTES_META } from "@/lib/design";
 import { CAPS } from "@/lib/design";
 import type { CapacityStatus } from "@/lib/design";
+import { useAuth } from "@/components/AuthProvider";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
 export default function TrackPage() {
   const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [routeId, setRouteId] = useState("DAS");
   const [busId, setBusId] = useState("1");
   const { position, error, watching, startTracking, stopTracking } = useTracker();
@@ -21,8 +24,9 @@ export default function TrackPage() {
   const [capacity, setCapacity] = useState<CapacityStatus>("seats");
   const prevPosRef = useRef<GeolocationPosition | null>(null);
   const [publishedCount, setPublishedCount] = useState(0);
+  const wasSignedIn = useRef(false);
+  if (user) wasSignedIn.current = true;
 
-  // Publish position to Firebase when GPS updates
   useEffect(() => {
     if (position && watching) {
       publish(busId, routeId, position);
@@ -30,6 +34,14 @@ export default function TrackPage() {
       setPublishedCount((c) => c + 1);
     }
   }, [position, watching, busId, routeId, publish]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(wasSignedIn.current ? "/" : "/login?redirect=/track");
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) return <LoadingOverlay message="Checking access..." />;
 
   const handleStart = () => {
     setCapacityStatus(capacity);
@@ -75,6 +87,22 @@ export default function TrackPage() {
             Broadcast your bus location in real time
           </p>
         </div>
+        <button
+          onClick={() => signOut()}
+          title="Sign out"
+          style={{
+            marginLeft: "auto", width: 34, height: 34, borderRadius: "50%",
+            background: "#EE3127", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
 
       <div style={{ flex: 1, overflow: "auto", padding: 16 }}>

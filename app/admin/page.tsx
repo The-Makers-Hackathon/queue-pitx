@@ -1,25 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useBuses, useQueues, useSetQueueValue } from "@/lib/hooks";
 import { ROUTES_META } from "@/lib/design";
 import { CAPS, CapacityStatus } from "@/lib/design";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { relativeTime } from "@/lib/algorithms";
+import { useAuth } from "@/components/AuthProvider";
 
 const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
 export default function AdminPage() {
   const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [routeId, setRouteId] = useState("DAS");
   const { buses, loading: busesLoading } = useBuses();
   const { queues, loading: queuesLoading } = useQueues();
-  const [routeId, setRouteId] = useState("DAS");
   const { setQueueLength, setCapacityStatus } = useSetQueueValue(routeId);
+  const wasSignedIn = useRef(false);
+  if (user) wasSignedIn.current = true;
 
-  if (busesLoading || queuesLoading) {
-    return <LoadingOverlay message="Loading admin data..." />;
-  }
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(wasSignedIn.current ? "/" : "/login");
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) return <LoadingOverlay message="Checking access..." />;
+  if (busesLoading || queuesLoading) return <LoadingOverlay message="Loading admin data..." />;
 
   const routeBuses = Object.entries(buses).filter(([, b]) => b.route_id === routeId);
   const queue = queues[routeId];
@@ -51,6 +60,22 @@ export default function AdminPage() {
             Override queue data in real time
           </p>
         </div>
+        <button
+          onClick={() => signOut()}
+          title="Sign out"
+          style={{
+            marginLeft: "auto", width: 34, height: 34, borderRadius: "50%",
+            background: "#EE3127", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
 
       <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
