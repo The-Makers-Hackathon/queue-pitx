@@ -52,38 +52,36 @@ export default function DashboardPage() {
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: "auto", paddingTop: 12 }}>
-        {tab === "queues" ? (
-          <>
-            {rec && rec.type !== "all-full" && Object.keys(rec).length > 0 && (
-              <RecommendationCard rec={rec} />
-            )}
-            {Object.entries(ROUTES_META).map(([rid, meta]) => {
-              const queue = queues[rid];
-              if (!queue) return null;
-              return (
-                <QueueCard
-                  key={rid}
-                  routeId={rid}
-                  queue={queue}
-                  buses={buses}
-                  recommendation={rec}
-                />
-              );
-            })}
-            {Object.keys(queues).length === 0 && (
-              <p style={{ textAlign: "center", color: "#AEAEB2", fontSize: 15, padding: 40 }}>
-                No queue data available yet
-              </p>
-            )}
-            <div style={{ height: 24 }} />
-          </>
-        ) : (
-          <div style={{ height: "100%", minHeight: "calc(100dvh - 130px)" }}>
-            <MapView buses={buses} />
-          </div>
-        )}
-      </div>
+      {tab === "queues" ? (
+        <div style={{ flex: 1, overflow: "auto", paddingTop: 12 }}>
+          {rec && rec.type !== "all-full" && Object.keys(rec).length > 0 && (
+            <RecommendationCard rec={rec} />
+          )}
+          {Object.entries(ROUTES_META).map(([rid, meta]) => {
+            const queue = queues[rid];
+            if (!queue) return null;
+            return (
+              <QueueCard
+                key={rid}
+                routeId={rid}
+                queue={queue}
+                buses={buses}
+                recommendation={rec}
+              />
+            );
+          })}
+          {Object.keys(queues).length === 0 && (
+            <p style={{ textAlign: "center", color: "#AEAEB2", fontSize: 15, padding: 40 }}>
+              No queue data available yet
+            </p>
+          )}
+          <div style={{ height: 24 }} />
+        </div>
+      ) : (
+        <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+          <MapView buses={buses} />
+        </div>
+      )}
     </div>
   );
 }

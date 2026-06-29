@@ -1,27 +1,19 @@
 "use client";
 
 import { useMemo } from "react";
-import { GoogleMap, Polyline } from "@react-google-maps/api";
+import { useLoadScript, GoogleMap, Polyline } from "@react-google-maps/api";
 import { BusPosition } from "@/lib/types";
-import { PITX_COORDS, ROUTE_PATHS, ROUTE_COLORS, ROUTE_LABELS } from "@/lib/constants";
+import { PITX_COORDS, ROUTE_PATHS, ROUTE_COLORS } from "@/lib/constants";
 import BusMarker from "./BusMarker";
 
-const containerStyle = { width: "100%", height: "100%" };
-const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: true,
-  zoomControl: false,
-  styles: [
-    { featureType: "poi", stylers: [{ visibility: "off" }] },
-    { featureType: "transit", stylers: [{ visibility: "off" }] },
-  ],
-};
+const containerStyle: React.CSSProperties = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 };
 
 interface MapViewProps {
   buses: Record<string, BusPosition>;
   selectedRouteId?: string;
 }
 
-export default function MapView({ buses, selectedRouteId }: MapViewProps) {
+function MapInner({ buses, selectedRouteId }: MapViewProps) {
   const center = useMemo(() => PITX_COORDS, []);
 
   const routeIds = useMemo(
@@ -29,8 +21,16 @@ export default function MapView({ buses, selectedRouteId }: MapViewProps) {
     [selectedRouteId]
   );
 
+  const options = useMemo(
+    () => ({
+      disableDefaultUI: true,
+      zoomControl: false,
+    }),
+    []
+  );
+
   return (
-    <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={11} options={mapOptions}>
+    <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={11} options={options}>
       {routeIds.map((rid) => (
         <Polyline
           key={rid}
@@ -51,4 +51,44 @@ export default function MapView({ buses, selectedRouteId }: MapViewProps) {
       })}
     </GoogleMap>
   );
+}
+
+export default function MapView(props: MapViewProps) {
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+  });
+
+  if (loadError) {
+    return (
+      <div style={{ padding: 24, textAlign: "center", color: "#EE3127", fontWeight: 600, fontSize: 14 }}>
+        Failed to load Google Maps
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div
+        style={{
+          height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#F2F2F7",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: 32, height: 32, border: "3px solid #E5E5EA",
+              borderTopColor: "#22469D", borderRadius: "50%",
+              margin: "0 auto 12px", animation: "spin .8s linear infinite",
+            }}
+          />
+          <p style={{ margin: 0, fontSize: 13, color: "#6B6B6B", fontWeight: 600 }}>
+            Loading map...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <MapInner {...props} />;
 }
