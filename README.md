@@ -73,6 +73,36 @@ Capacity status: `seats` | `standing` | `full`.
 | `/admin` | Admin — queue overrides | Yes (Google) |
 | `/login` | Google OAuth sign-in | No |
 
+## Role-Based Access Control
+
+Three roles: **commuter** (public, no auth), **conductor** (auth + `/track`), **admin** (auth + everything).
+
+| Role | `/dashboard` | `/track` | `/admin` |
+|---|---|---|---|
+| Commuter | ✓ | ✗ | ✗ |
+| Conductor | ✓ | ✓ | ✗ |
+| Admin | ✓ | ✓ | ✓ |
+
+Roles are stored in RTDB at `/roles/{email}` (dots replaced with commas). When a user signs in via Google, their email is looked up to determine their role.
+
+### Seeding Roles
+
+Edit `scripts/seed-roles.ts` with the email → role mappings you want.  
+Requires a Firebase service account key set in one of:
+- `GOOGLE_APPLICATION_CREDENTIALS` env var
+- `FIREBASE_SERVICE_ACCOUNT` env var (raw JSON)
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="./service-account.json"
+pnpm dlx tsx --env-file=.env.local scripts/seed-roles.ts
+```
+
+> **No service account?** You can also write roles manually in Firebase Console:  
+> Database → `roles/{email_with_commas}` → value = `"admin"` or `"conductor"`  
+> (dots become commas, e.g. `admin,queuepitx,com`)
+
+**Fallback:** If no role is found for a signed-in user, they default to `"commuter"` and cannot access `/track` or `/admin`. Only explicitly seeded `"conductor"` and `"admin"` users can access `/track`. Only `"admin"` can access `/admin`.
+
 ## Scripts
 
 ```bash

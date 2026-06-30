@@ -1,5 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getDatabase, Database, ref, onValue, set, off, remove } from "firebase/database";
+import { getDatabase, Database, ref, onValue, set, off, remove, get } from "firebase/database";
 import { getAuth, Auth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -43,4 +43,4 @@ export function getAuthInstance() {
   return auth;
 }
 
-export { ref, onValue, set, off, remove };
+export { ref, onValue, set, off, remove, get };

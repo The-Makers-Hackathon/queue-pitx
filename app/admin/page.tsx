@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useBuses, useQueues, useSetQueueValue } from "@/lib/hooks";
-import { ROUTES_META } from "@/lib/design";
-import { CAPS, CapacityStatus } from "@/lib/design";
+import { ROUTES_META, CAPS } from "@/lib/design";
+import type { CapacityStatus } from "@/lib/design";
+import { canAccess } from "@/lib/roles";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { relativeTime } from "@/lib/algorithms";
 import { useAuth } from "@/components/AuthProvider";
@@ -13,7 +14,7 @@ const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, role, roleLoading, loading: authLoading, signOut } = useAuth();
   const [routeId, setRouteId] = useState("DAS");
   const { buses, loading: busesLoading } = useBuses();
   const { queues, loading: queuesLoading } = useQueues();
@@ -27,7 +28,13 @@ export default function AdminPage() {
     }
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return <LoadingOverlay message="Checking access..." />;
+  const denied = !authLoading && user && !roleLoading && !canAccess(role, "admin");
+
+  useEffect(() => {
+    if (denied) router.replace("/unauthorized");
+  }, [denied, router]);
+
+  if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
   if (busesLoading || queuesLoading) return <LoadingOverlay message="Loading admin data..." />;
 
   const routeBuses = Object.entries(buses).filter(([, b]) => b.route_id === routeId);

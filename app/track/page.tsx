@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getDb, ref, remove } from "@/lib/firebase";
 import { useTracker, usePublishPosition, useSetQueueValue, useRemoveBusData } from "@/lib/hooks";
-import { ROUTES_META } from "@/lib/design";
-import { CAPS } from "@/lib/design";
+import { ROUTES_META, CAPS } from "@/lib/design";
 import type { CapacityStatus } from "@/lib/design";
+import { canAccess } from "@/lib/roles";
 import { useAuth } from "@/components/AuthProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 
@@ -14,7 +14,7 @@ const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
 export default function TrackPage() {
   const router = useRouter();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, role, roleLoading, loading: authLoading, signOut } = useAuth();
   const [routeId, setRouteId] = useState("DAS");
   const [busId, setBusId] = useState("1");
   const { position, error, watching, startTracking, stopTracking } = useTracker();
@@ -41,7 +41,13 @@ export default function TrackPage() {
     }
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return <LoadingOverlay message="Checking access..." />;
+  const denied = !authLoading && user && !roleLoading && !canAccess(role, "track");
+
+  useEffect(() => {
+    if (denied) router.replace("/unauthorized");
+  }, [denied, router]);
+
+  if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
 
   const handleStart = () => {
     setCapacityStatus(capacity);
