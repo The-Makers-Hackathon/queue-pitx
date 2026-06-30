@@ -1,31 +1,43 @@
+// ── Color Tokens (DESIGN.md v1.0) ──
 export const C = {
-  blue: "#22469D",
-  blueDark: "#1A3578",
-  blueLight: "#EEF2FF",
-  blueMid: "#C5D0F0",
-  charcoal: "#1C1C1E",
-  mid: "#6B6B6B",
-  muted: "#AEAEB2",
-  border: "#E5E5EA",
+  primary: "#E38C89",
+  secondary: "#999CA4",
+  text: "#51515D",
+  background: "#FFFFFF",
+  success: "#22C55E",
+  error: "#EF4444",
+  warning: "#F59E0B",
+  info: "#3B82F6",
   surface: "#F2F2F7",
+  border: "#E5E5EA",
+  muted: "#AEAEB2",
+  charcoal: "#1C1C1E",
   white: "#FFFFFF",
-  red: "#EE3127",
-  redLight: "#FEF0EF",
-  coral: "#EE6059",
-  coralLight: "#FEF2F1",
-  green: "#1A7F4B",
-  greenLight: "#EBF7F2",
 } as const;
 
+// ── Route Colors ──
 export const ROUTES_META = {
-  DAS: { name: "Dasmariñas", short: "DAS", gate: "Gate 7", color: C.blue },
-  TRE: { name: "Trece Martires", short: "TRE", gate: "Gate 9", color: C.red },
+  DAS: { name: "Dasmariñas", short: "DAS", gate: "Gate 7", color: "#2563EB" },
+  TRE: { name: "Trece Martires", short: "TRE", gate: "Gate 9", color: "#16A34A" },
 } as const;
 
+// ── Capacity Status ──
 export const CAPS = [
-  { id: "seats" as const, label: "Seats free", sub: "Passengers can board normally", icon: "🟢", color: C.green, bg: C.greenLight },
-  { id: "standing" as const, label: "Standing only", sub: "Seats full, aisle available", icon: "🟡", color: C.coral, bg: C.coralLight },
-  { id: "full" as const, label: "Bus full", sub: "Cannot accept more passengers", icon: "🔴", color: C.red, bg: C.redLight },
+  { id: "seats" as const, label: "Seats free", sub: "Passengers can board normally", icon: "🟢", color: C.success, bg: "#F0FDF4" },
+  { id: "standing" as const, label: "Standing only", sub: "Seats full, aisle available", icon: "🟡", color: C.warning, bg: "#FFFBEB" },
+  { id: "full" as const, label: "Bus full", sub: "Cannot accept more passengers", icon: "🔴", color: C.error, bg: "#FEF2F2" },
 ] as const;
 
 export type CapacityStatus = (typeof CAPS)[number]["id"];
+
+// ── Spacing ──
+export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 24, 6: 32, 7: 48, 8: 64 } as const;
+
+// ── Border Radius ──
+export const RADIUS = { sm: 8, md: 12, lg: 16, xl: 24, full: 9999 } as const;
+
+// ── Typography ──
+export const FONT = {
+  ui: "'Roboto', sans-serif",
+  brand: "'Bricolage Grotesque', sans-serif",
+} as const;

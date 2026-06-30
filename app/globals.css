@@ -1,43 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&family=Bricolage+Grotesque:wght@700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  --blue: #22469D;
-  --blue-dark: #1A3578;
-  --blue-light: #EEF2FF;
-  --blue-mid: #C5D0F0;
-  --charcoal: #1C1C1E;
-  --mid: #6B6B6B;
-  --muted: #AEAEB2;
-  --border: #E5E5EA;
+  --primary: #E38C89;
+  --secondary: #999CA4;
+  --text: #51515D;
+  --background: #FFFFFF;
+  --success: #22C55E;
+  --error: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
   --surface: #F2F2F7;
+  --border: #E5E5EA;
+  --muted: #AEAEB2;
+  --charcoal: #1C1C1E;
   --white: #FFFFFF;
-  --red: #EE3127;
-  --red-light: #FEF0EF;
-  --coral: #EE6059;
-  --coral-light: #FEF2F1;
-  --green: #1A7F4B;
-  --green-light: #EBF7F2;
+  --route-dasma: #2563EB;
+  --route-trece: #16A34A;
 }
 
 @theme inline {
-  --font-sans: 'Nunito Sans', system-ui, sans-serif;
-  --color-blue: #22469D;
-  --color-blue-dark: #1A3578;
-  --color-blue-light: #EEF2FF;
-  --color-blue-mid: #C5D0F0;
-  --color-charcoal: #1C1C1E;
-  --color-mid: #6B6B6B;
-  --color-muted: #AEAEB2;
-  --color-border: #E5E5EA;
+  --font-sans: 'Roboto', system-ui, sans-serif;
+  --font-logo: 'Bricolage Grotesque', sans-serif;
+  --color-primary: #E38C89;
+  --color-secondary: #999CA4;
+  --color-text: #51515D;
+  --color-background: #FFFFFF;
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
   --color-surface: #F2F2F7;
+  --color-border: #E5E5EA;
+  --color-muted: #AEAEB2;
+  --color-charcoal: #1C1C1E;
   --color-white: #FFFFFF;
-  --color-red: #EE3127;
-  --color-red-light: #FEF0EF;
-  --color-coral: #EE6059;
-  --color-coral-light: #FEF2F1;
-  --color-green: #1A7F4B;
-  --color-green-light: #EBF7F2;
+  --color-route-dasma: #2563EB;
+  --color-route-trece: #16A34A;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
 }
 
 @keyframes fade-up {
@@ -60,20 +64,31 @@
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 .animate-fade-up  { animation: fade-up .3s cubic-bezier(.22,1,.36,1) forwards; }
 .animate-scale-in { animation: scale-in .25s cubic-bezier(.22,1,.36,1) forwards; }
 
 select {
-  font-family: var(--font-sans); font-size: 15px; font-weight: 600;
-  color: var(--charcoal); background: var(--white);
-  border: 2px solid var(--border); border-radius: 12px;
-  padding: 15px 44px 15px 16px; width: 100%;
-  outline: none; appearance: none; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%236B6B6B' d='M8 10.5L3 5h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center;
+  font-family: 'Roboto', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--charcoal);
+  background: var(--white);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 15px 44px 15px 16px;
+  width: 100%;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23999CA4' d='M8 10.5L3 5h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
   transition: border-color .15s;
 }
-select:focus { border-color: var(--blue); outline: 3px solid var(--blue-light); }
+select:focus { border-color: var(--primary); outline: 3px solid #FCE4E3; }
 
-button { font-family: var(--font-sans); }
+button { font-family: 'Roboto', sans-serif; }

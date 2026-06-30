@@ -1,10 +1,8 @@
-import { C, ROUTES_META } from "./design";
-
 export const PITX_COORDS = { lat: 14.4994, lng: 120.9922 };
 
 export const ROUTE_COLORS: Record<string, string> = {
-  DAS: C.blue,
-  TRE: C.red,
+  DAS: "#2563EB",
+  TRE: "#16A34A",
 };
 
 export const ROUTE_LABELS: Record<string, string> = {

@@ -1,5 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getDatabase, Database, ref, onValue, set, off } from "firebase/database";
+import { getDatabase, Database, ref, onValue, set, off, remove, get } from "firebase/database";
+import { getAuth, Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,6 +14,7 @@ const firebaseConfig = {
 
 let app: FirebaseApp;
 let db: Database;
+let auth: Auth;
 
 export function initFirebase() {
   if (!getApps().length) {
@@ -21,7 +23,8 @@ export function initFirebase() {
     app = getApps()[0];
   }
   db = getDatabase(app);
-  return { app, db };
+  auth = getAuth(app);
+  return { app, db, auth };
 }
 
 export function getDb() {
@@ -32,4 +35,12 @@ export function getDb() {
   return db;
 }
 
-export { ref, onValue, set, off };
+export function getAuthInstance() {
+  if (!auth) {
+    const { auth: initializedAuth } = initFirebase();
+    return initializedAuth;
+  }
+  return auth;
+}
+
+export { ref, onValue, set, off, remove, get };

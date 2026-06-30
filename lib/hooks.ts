@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { getDb, ref, onValue, set, off } from "./firebase";
+import { getDb, ref, onValue, set, remove } from "./firebase";
 import { BusPosition, QueueData } from "./types";
 
 function useRealtimeValue<T>(path: string): { data: Record<string, T>; loading: boolean } {
@@ -17,7 +17,7 @@ function useRealtimeValue<T>(path: string): { data: Record<string, T>; loading: 
         dbRef,
         (snapshot) => {
           const val = snapshot.val();
-          if (val) setData(val as Record<string, T>);
+          setData(val ? (val as Record<string, T>) : {});
           setLoading(false);
         },
         () => {
@@ -25,7 +25,7 @@ function useRealtimeValue<T>(path: string): { data: Record<string, T>; loading: 
         }
       );
 
-      return () => off(dbRef, "value", unsubscribe);
+      return unsubscribe;
     } catch {
       setTimeout(() => setLoading(false), 0);
     }
@@ -54,7 +54,7 @@ export function useFirebaseStatus() {
       const unsubscribe = onValue(connectedRef, (snap) => {
         setConnected(snap.val() === true);
       });
-      return () => off(connectedRef, "value", unsubscribe);
+      return unsubscribe;
     } catch {}
   }, []);
 
@@ -149,4 +149,18 @@ export function usePublishPosition() {
   );
 
   return { publish };
+}
+
+export function useRemoveBusData() {
+  const db = getDb();
+
+  const removeBus = useCallback(
+    (busId: string) => {
+      const busRef = ref(db, `buses/${busId}`);
+      remove(busRef);
+    },
+    [db]
+  );
+
+  return { removeBus };
 }

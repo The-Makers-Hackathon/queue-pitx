@@ -2,25 +2,31 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useTracker, usePublishPosition, useSetQueueValue } from "@/lib/hooks";
-import { ROUTES_META } from "@/lib/design";
-import { CAPS } from "@/lib/design";
+import { getDb, ref, remove } from "@/lib/firebase";
+import { useTracker, usePublishPosition, useSetQueueValue, useRemoveBusData } from "@/lib/hooks";
+import { ROUTES_META, CAPS } from "@/lib/design";
 import type { CapacityStatus } from "@/lib/design";
+import { canAccess } from "@/lib/roles";
+import { useAuth } from "@/components/AuthProvider";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
 export default function TrackPage() {
   const router = useRouter();
+  const { user, role, roleLoading, loading: authLoading, signOut } = useAuth();
   const [routeId, setRouteId] = useState("DAS");
   const [busId, setBusId] = useState("1");
   const { position, error, watching, startTracking, stopTracking } = useTracker();
   const { publish } = usePublishPosition();
   const { setCapacityStatus } = useSetQueueValue(routeId);
+  const { removeBus } = useRemoveBusData();
   const [capacity, setCapacity] = useState<CapacityStatus>("seats");
   const prevPosRef = useRef<GeolocationPosition | null>(null);
   const [publishedCount, setPublishedCount] = useState(0);
+  const wasSignedIn = useRef(false);
+  if (user) wasSignedIn.current = true;
 
-  // Publish position to Firebase when GPS updates
   useEffect(() => {
     if (position && watching) {
       publish(busId, routeId, position);
@@ -28,6 +34,31 @@ export default function TrackPage() {
       setPublishedCount((c) => c + 1);
     }
   }, [position, watching, busId, routeId, publish]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(wasSignedIn.current ? "/" : "/login?redirect=/track");
+    }
+  }, [authLoading, user, router]);
+
+  const denied = !authLoading && user && !roleLoading && !canAccess(role, "track");
+
+  useEffect(() => {
+    if (denied) router.replace("/unauthorized");
+  }, [denied, router]);
+
+  if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
+
+  const handleStart = () => {
+    setCapacityStatus(capacity);
+    startTracking();
+  };
+
+  const handleStop = () => {
+    removeBus(busId);
+    remove(ref(getDb(), `queues/${routeId}/capacity_status`));
+    stopTracking();
+  };
 
   // Handle capacity button press
   const handleCapacity = (status: CapacityStatus) => {
@@ -62,6 +93,22 @@ export default function TrackPage() {
             Broadcast your bus location in real time
           </p>
         </div>
+        <button
+          onClick={() => signOut()}
+          title="Sign out"
+          style={{
+            marginLeft: "auto", width: 34, height: 34, borderRadius: "50%",
+            background: "#EE3127", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
 
       <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
@@ -82,6 +129,31 @@ export default function TrackPage() {
                 <option key={i + 1} value={String(i + 1)}>Bus {i + 1}</option>
               ))}
             </select>
+          </div>
+        </div>
+        
+        {/* Capacity status */}
+        <div style={{ marginBottom: 16 }}>
+          <Label style={{ display: "block", marginBottom: 8 }}>Bus Capacity</Label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {CAPS.map((cap) => (
+              <button
+                key={cap.id}
+                onClick={() => handleCapacity(cap.id)}
+                style={{
+                  flex: 1, padding: "12px 8px", borderRadius: 12,
+                  border: capacity === cap.id ? `2px solid ${cap.color}` : "2px solid #E5E5EA",
+                  background: capacity === cap.id ? cap.bg : "#fff",
+                  cursor: "pointer", textAlign: "center",
+                  transition: "all .15s",
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 4 }}>{cap.icon}</div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#1C1C1E", lineHeight: 1.2 }}>
+                  {cap.label}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -141,7 +213,7 @@ export default function TrackPage() {
           )}
 
           <button
-            onClick={watching ? stopTracking : startTracking}
+            onClick={watching ? handleStop : handleStart}
             style={{
               width: "100%", padding: "14px", border: "none", borderRadius: 12,
               fontSize: 15, fontWeight: 700, cursor: "pointer",
@@ -152,31 +224,6 @@ export default function TrackPage() {
           >
             {watching ? "Stop Broadcasting" : "Start Broadcasting"}
           </button>
-        </div>
-
-        {/* Capacity status */}
-        <div style={{ marginBottom: 16 }}>
-          <Label style={{ display: "block", marginBottom: 8 }}>Bus Capacity</Label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {CAPS.map((cap) => (
-              <button
-                key={cap.id}
-                onClick={() => handleCapacity(cap.id)}
-                style={{
-                  flex: 1, padding: "12px 8px", borderRadius: 12,
-                  border: capacity === cap.id ? `2px solid ${cap.color}` : "2px solid #E5E5EA",
-                  background: capacity === cap.id ? cap.bg : "#fff",
-                  cursor: "pointer", textAlign: "center",
-                  transition: "all .15s",
-                }}
-              >
-                <div style={{ fontSize: 20, marginBottom: 4 }}>{cap.icon}</div>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#1C1C1E", lineHeight: 1.2 }}>
-                  {cap.label}
-                </p>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Published count */}
