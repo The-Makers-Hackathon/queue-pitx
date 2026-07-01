@@ -24,9 +24,8 @@ export default function BusMarker({ busId, lat, lng, color, pulse = false, route
       getPixelPositionOffset={() => pixelOffset}
     >
       <div
-        style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", cursor: "default" }}
-        onMouseEnter={() => setShowTip(true)}
-        onMouseLeave={() => setShowTip(false)}
+        style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}
+        onClick={() => setShowTip((o) => !o)}
       >
         {pulse && (
           <div
