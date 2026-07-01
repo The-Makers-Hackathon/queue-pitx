@@ -149,7 +149,9 @@ export default function AdminPage() {
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                     <span style={{ fontSize: 12, color: "#6B6B6B", fontWeight: 600 }}>
-                      {bus.lat.toFixed(4)}, {bus.lng.toFixed(4)}
+                      {bus.lat != null && bus.lng != null
+                        ? `${bus.lat.toFixed(4)}, ${bus.lng.toFixed(4)}`
+                        : "—"}
                     </span>
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       {CAPS.map((cap) => (
