@@ -1317,5 +1317,5 @@ export const ROUTE_TO_FB: Record<string, string> = {
   TRE: "trece_martires",
 };
 
-export const STALE_DATA_MS = 5 * 60 * 1000;
-export const BUS_STALE_MS = 60 * 1000;
+export const STALE_DATA_MS = 30 * 60 * 1000;
+export const BUS_STALE_MS = 30 * 60 * 1000;
