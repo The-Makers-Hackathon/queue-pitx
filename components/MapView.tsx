@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { useLoadScript, GoogleMap, Polyline } from "@react-google-maps/api";
 import { BusPosition } from "@/lib/types";
 import { PITX_COORDS, ROUTE_PATHS, ROUTE_COLORS } from "@/lib/constants";
+import { ROUTES_META } from "@/lib/design";
+import { computeETA } from "@/lib/algorithms";
 import BusMarker from "./BusMarker";
 
 const containerStyle: React.CSSProperties = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 };
@@ -45,8 +47,11 @@ function MapInner({ buses, selectedRouteId }: MapViewProps) {
 
       {Object.entries(buses).map(([id, bus]) => {
         const color = ROUTE_COLORS[bus.route_id] || "#6B6B6B";
+        const meta = ROUTES_META[bus.route_id as keyof typeof ROUTES_META];
+        const routeLabel = meta?.name ?? bus.route_id;
+        const eta = computeETA(bus);
         return (
-          <BusMarker key={id} busId={id} lat={bus.lat} lng={bus.lng} color={color} pulse />
+          <BusMarker key={id} busId={id} lat={bus.lat} lng={bus.lng} color={color} pulse routeLabel={routeLabel} eta={eta} />
         );
       })}
     </GoogleMap>
