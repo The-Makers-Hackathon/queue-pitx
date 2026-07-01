@@ -3,26 +3,33 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useBuses, useQueues } from "@/lib/hooks";
-import { computeRecommendation } from "@/lib/algorithms";
+import { useBuses } from "@/lib/hooks";
 import { ROUTES_META } from "@/lib/design";
 import LoadingOverlay from "@/components/LoadingOverlay";
-import QueueCard from "@/components/QueueCard";
-import RecommendationCard from "@/components/RecommendationCard";
+import BusCard from "@/components/BusCard";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { buses, loading: busesLoading } = useBuses();
-  const { queues, loading: queuesLoading } = useQueues();
-  const [tab, setTab] = useState<"queues" | "map">("queues");
+  const { buses, loading } = useBuses();
+  const [tab, setTab] = useState<"buses" | "map">("buses");
 
-  if (busesLoading || queuesLoading) {
-    return <LoadingOverlay message="Loading queues..." />;
+  if (loading) {
+    return <LoadingOverlay message="Loading buses..." />;
   }
 
-  const rec = computeRecommendation(buses, queues, null);
+  const activeBuses = Object.entries(buses);
+
+  const grouped = activeBuses.reduce<Record<string, [string, typeof buses[string]][]>>(
+    (acc, [id, bus]) => {
+      const rid = bus.route_id || "unknown";
+      if (!acc[rid]) acc[rid] = [];
+      acc[rid].push([id, bus]);
+      return acc;
+    },
+    {}
+  );
 
   return (
     <div style={{ minHeight: "100dvh", background: "#F2F2F7", display: "flex", flexDirection: "column" }}>
@@ -55,8 +62,8 @@ export default function DashboardPage() {
             background: "#F2F2F7", borderRadius: 12, padding: 3,
           }}
         >
-          <TabButton active={tab === "queues"} onClick={() => setTab("queues")}>
-            Queues
+          <TabButton active={tab === "buses"} onClick={() => setTab("buses")}>
+            Buses
           </TabButton>
           <TabButton active={tab === "map"} onClick={() => setTab("map")}>
             Live Map
@@ -65,27 +72,40 @@ export default function DashboardPage() {
       </div>
 
       {/* Content */}
-      {tab === "queues" ? (
+      {tab === "buses" ? (
         <div style={{ flex: 1, overflow: "auto", paddingTop: 12 }}>
-          {rec && rec.type !== "all-full" && Object.keys(rec).length > 0 && (
-            <RecommendationCard rec={rec} />
-          )}
-          {Object.entries(ROUTES_META).map(([rid, meta]) => {
-            const queue = queues[rid];
-            if (!queue) return null;
+          {Object.entries(grouped).map(([rid, routeBuses]) => {
+            const meta = ROUTES_META[rid as keyof typeof ROUTES_META];
             return (
-              <QueueCard
-                key={rid}
-                routeId={rid}
-                queue={queue}
-                buses={buses}
-                recommendation={rec}
-              />
+              <div key={rid}>
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "4px 20px 8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 8, height: 8, borderRadius: "50%",
+                      background: meta?.color ?? "#999",
+                    }}
+                  />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#6B6B6B" }}>
+                    {meta?.name ?? rid}
+                  </span>
+                  <span style={{ fontSize: 12, color: "#AEAEB2" }}>
+                    ({routeBuses.length})
+                  </span>
+                </div>
+                {routeBuses.map(([id, bus]) => (
+                  <BusCard key={id} busId={id} bus={bus} />
+                ))}
+              </div>
             );
           })}
-          {Object.keys(queues).length === 0 && (
+          {activeBuses.length === 0 && (
             <p style={{ textAlign: "center", color: "#AEAEB2", fontSize: 15, padding: 40 }}>
-              No queue data available yet
+              No active buses right now
             </p>
           )}
           <div style={{ height: 24 }} />

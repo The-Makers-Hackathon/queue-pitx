@@ -1,24 +1,24 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useBuses, useQueues, useSetQueueValue } from "@/lib/hooks";
+import { useBuses } from "@/lib/hooks";
 import { ROUTES_META, CAPS } from "@/lib/design";
 import type { CapacityStatus } from "@/lib/design";
 import { canAccess } from "@/lib/roles";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { relativeTime } from "@/lib/algorithms";
 import { useAuth } from "@/components/AuthProvider";
+import { getDb, ref, set, remove } from "@/lib/firebase";
 
 const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, role, roleLoading, loading: authLoading, signOut } = useAuth();
-  const [routeId, setRouteId] = useState("DAS");
+  const [routeFilter, setRouteFilter] = useState("all");
   const { buses, loading: busesLoading } = useBuses();
-  const { queues, loading: queuesLoading } = useQueues();
-  const { setQueueLength, setCapacityStatus } = useSetQueueValue(routeId);
   const wasSignedIn = useRef(false);
   if (user) wasSignedIn.current = true;
 
@@ -34,11 +34,25 @@ export default function AdminPage() {
     if (denied) router.replace("/unauthorized");
   }, [denied, router]);
 
-  if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
-  if (busesLoading || queuesLoading) return <LoadingOverlay message="Loading admin data..." />;
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
-  const routeBuses = Object.entries(buses).filter(([, b]) => b.route_id === routeId);
-  const queue = queues[routeId];
+  const setBusCapacity = useCallback((busId: string, status: CapacityStatus) => {
+    const db = getDb();
+    set(ref(db, `buses/${busId}/capacity_status`), status);
+  }, []);
+
+  const removeBus = useCallback((busId: string) => {
+    const db = getDb();
+    remove(ref(db, `buses/${busId}`));
+    setConfirmRemove(null);
+  }, []);;
+
+  if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
+  if (busesLoading) return <LoadingOverlay message="Loading admin data..." />;
+
+  const filteredBuses = Object.entries(buses).filter(
+    ([, b]) => routeFilter === "all" || b.route_id === routeFilter
+  );
 
   return (
     <div style={{ minHeight: "100dvh", background: "#F2F2F7", display: "flex", flexDirection: "column" }}>
@@ -64,7 +78,7 @@ export default function AdminPage() {
             Admin Controls
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: "#6B6B6B", fontWeight: 500 }}>
-            Override queue data in real time
+            Manage active buses and capacities
           </p>
         </div>
         <button
@@ -86,137 +100,119 @@ export default function AdminPage() {
       </div>
 
       <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
-        {/* Route selector */}
+        {/* Route filter */}
         <div style={{ marginBottom: 16 }}>
-          <Label>Route</Label>
-          <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+          <Label>Filter by Route</Label>
+          <select value={routeFilter} onChange={(e) => setRouteFilter(e.target.value)}>
+            <option value="all">All Routes</option>
             {ROUTES.map((r) => (
               <option key={r.id} value={r.id}>{r.name} ({r.gate})</option>
             ))}
           </select>
         </div>
 
-        {/* Queue controls */}
-        {queue ? (
-          <div
-            style={{
-              background: "#fff", borderRadius: 16,
-              border: "1px solid #E5E5EA", padding: 16,
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div
-                style={{
-                  width: 12, height: 12, borderRadius: "50%",
-                  background: ROUTES_META[routeId as keyof typeof ROUTES_META]?.color,
-                }}
-              />
-              <span style={{ fontSize: 16, fontWeight: 800, color: "#1C1C1E" }}>
-                {ROUTES_META[routeId as keyof typeof ROUTES_META]?.name} Queue
-              </span>
-            </div>
-
-            {/* Queue length slider */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6B6B" }}>Queue length</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: "#22469D" }}>
-                  {queue.queue_length} passengers
-                </span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={50}
-                value={queue.queue_length}
-                onChange={(e) => setQueueLength(Number(e.target.value))}
-                style={{
-                  width: "100%", height: 6, borderRadius: 100,
-                  appearance: "none", background: "#F2F2F7",
-                  accentColor: "#22469D", cursor: "pointer",
-                }}
-              />
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-                <span style={{ fontSize: 11, color: "#AEAEB2" }}>0</span>
-                <span style={{ fontSize: 11, color: "#AEAEB2" }}>50</span>
-              </div>
-            </div>
-
-            {/* Capacity status toggle */}
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6B6B", display: "block", marginBottom: 8 }}>
-                Capacity status
-              </span>
-              <div style={{ display: "flex", gap: 6 }}>
-                {CAPS.map((cap) => (
-                  <button
-                    key={cap.id}
-                    onClick={() => setCapacityStatus(cap.id)}
-                    style={{
-                      flex: 1, padding: "10px 8px", borderRadius: 10,
-                      border: queue.capacity_status === cap.id
-                        ? `2px solid ${cap.color}`
-                        : "2px solid #E5E5EA",
-                      background: queue.capacity_status === cap.id ? cap.bg : "#fff",
-                      cursor: "pointer", fontSize: 12, fontWeight: 700,
-                      color: "#1C1C1E", transition: "all .12s",
-                    }}
-                  >
-                    <div style={{ fontSize: 16, marginBottom: 2 }}>{cap.icon}</div>
-                    {cap.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div
-            style={{
-              background: "#fff", borderRadius: 16,
-              border: "1px solid #E5E5EA", padding: 24, textAlign: "center",
-              marginBottom: 16,
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 14, color: "#AEAEB2", fontWeight: 600 }}>
-              No queue data for this route
-            </p>
-          </div>
-        )}
-
         {/* Active buses list */}
         <div>
           <h3 style={{ margin: "0 0 10px", fontSize: 14, fontWeight: 700, color: "#6B6B6B" }}>
-            Active Buses ({routeBuses.length})
+            Active Buses ({filteredBuses.length})
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {routeBuses.map(([id, bus]) => (
-              <div
-                key={id}
-                style={{
-                  background: "#fff", borderRadius: 12,
-                  border: "1px solid #E5E5EA", padding: "10px 14px",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                }}
-              >
-                <div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1C1C1E" }}>
-                    Bus {id}
-                  </span>
-                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#AEAEB2" }}>
-                    {relativeTime(bus.timestamp)}
-                  </p>
+            {filteredBuses.map(([id, bus]) => {
+              const meta = ROUTES_META[bus.route_id as keyof typeof ROUTES_META];
+              return (
+                <div
+                  key={id}
+                  style={{
+                    background: "#fff", borderRadius: 12,
+                    border: "1px solid #E5E5EA", padding: "12px 14px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div
+                        style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: meta?.color ?? "#999", flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "#1C1C1E" }}>
+                        Bus {id}
+                      </span>
+                      <span style={{ fontSize: 12, color: "#AEAEB2", fontWeight: 600 }}>
+                        {meta?.name ?? bus.route_id}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 12, color: "#AEAEB2" }}>
+                      {relativeTime(bus.timestamp)}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 12, color: "#6B6B6B", fontWeight: 600 }}>
+                      {bus.lat != null && bus.lng != null
+                        ? `${bus.lat.toFixed(4)}, ${bus.lng.toFixed(4)}`
+                        : "—"}
+                    </span>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      {CAPS.map((cap) => (
+                        <button
+                          key={cap.id}
+                          onClick={() => setBusCapacity(id, cap.id)}
+                          style={{
+                            padding: "6px 10px", borderRadius: 8, border: "none",
+                            fontSize: 11, fontWeight: 700, cursor: "pointer",
+                            background: bus.capacity_status === cap.id ? cap.bg : "#F2F2F7",
+                            color: bus.capacity_status === cap.id ? cap.color : "#6B6B6B",
+                            transition: "all .12s",
+                          }}
+                        >
+                          {cap.icon} {cap.label}
+                        </button>
+                      ))}
+                      {confirmRemove === id ? (
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button
+                            onClick={() => removeBus(id)}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: "none",
+                              fontSize: 11, fontWeight: 700, cursor: "pointer",
+                              background: "#FEF0EF", color: "#EE3127",
+                            }}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setConfirmRemove(null)}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: "none",
+                              fontSize: 11, fontWeight: 700, cursor: "pointer",
+                              background: "#F2F2F7", color: "#6B6B6B",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmRemove(id)}
+                          style={{
+                            padding: "6px 10px", borderRadius: 8, border: "none",
+                            fontSize: 11, fontWeight: 700, cursor: "pointer",
+                            background: "#FEF0EF", color: "#EE3127",
+                            transition: "all .12s",
+                          }}
+                        >
+                          ✕ Stop
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6B6B" }}>
-                    {bus.lat.toFixed(4)}, {bus.lng.toFixed(4)}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {routeBuses.length === 0 && (
+              );
+            })}
+            {filteredBuses.length === 0 && (
               <p style={{ fontSize: 13, color: "#AEAEB2", textAlign: "center", padding: 8 }}>
-                No buses broadcasting on this route
+                No buses found
               </p>
             )}
           </div>
