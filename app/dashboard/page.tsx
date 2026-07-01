@@ -228,6 +228,37 @@ export default function DashboardPage() {
             </button>
           </div>
 
+          {/* Recommendation card */}
+          {withEta.length > 0 && (() => {
+            const best = withEta[0];
+            const meta = routeMeta(best.bus.route_id);
+            return (
+              <div
+                style={{
+                  margin: "0 16px 16px", padding: "14px 16px",
+                  borderRadius: 14, background: "linear-gradient(135deg, #22469D 0%, #1A3578 100%)",
+                  color: "#fff",
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, opacity: .7, letterSpacing: .5, textTransform: "uppercase" }}>
+                  Recommended Bus
+                </p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+                  <span style={{ fontSize: 28, fontWeight: 900, lineHeight: 1 }}>
+                    {Math.round(best.eta)}
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: 600, opacity: .8 }}>min ETA</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: meta?.color ?? "#999" }} />
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>
+                    Bus {best.id} · {meta?.name ?? best.bus.route_id}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
           {Object.entries(grouped).map(([rid, routeBuses]) => {
             const meta = routeMeta(rid);
             return (
