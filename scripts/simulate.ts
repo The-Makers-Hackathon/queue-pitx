@@ -283,6 +283,12 @@ const BUSES = [
   { id: "4", route: "TRE", stagger: 3 },
 ];
 
+function pingPongIndex(i: number, max: number): number {
+  const cycle = max * 2;
+  const mod = i % cycle;
+  return mod <= max ? mod : cycle - mod;
+}
+
 const CAPACITY_STATUSES = ["seats", "full"] as const;
 type CapacityStatus = (typeof CAPACITY_STATUSES)[number];
 
@@ -300,7 +306,7 @@ async function writeBusPosition(
   const path = ROUTE_PATHS[routeId];
   if (!path) return;
 
-  const idx = waypointIndex % path.length;
+  const idx = pingPongIndex(waypointIndex, path.length - 1);
   const waypoint = path[idx];
 
   if (!busCapacities[busId]) {
@@ -335,7 +341,7 @@ async function main() {
     for (const bus of BUSES) {
       try {
         await writeBusPosition(db, bus.id, bus.route, busIndices[bus.id]);
-        busIndices[bus.id] = (busIndices[bus.id] + 1) % ROUTE_PATHS[bus.route].length;
+        busIndices[bus.id] += 1;
       } catch (err) {
         console.error(`Failed to write ${bus.id}:`, err);
       }
