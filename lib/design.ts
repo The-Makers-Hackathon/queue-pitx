@@ -24,7 +24,6 @@ export const ROUTES_META = {
 // ── Capacity Status ──
 export const CAPS = [
   { id: "seats" as const, label: "Seats free", sub: "Passengers can board normally", icon: "🟢", color: C.success, bg: "#F0FDF4" },
-  { id: "standing" as const, label: "Standing only", sub: "Seats full, aisle available", icon: "🟡", color: C.warning, bg: "#FFFBEB" },
   { id: "full" as const, label: "Bus full", sub: "Cannot accept more passengers", icon: "🔴", color: C.error, bg: "#FEF2F2" },
 ] as const;
 

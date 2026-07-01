@@ -283,7 +283,7 @@ const BUSES = [
   { id: "4", route: "TRE", stagger: 3 },
 ];
 
-const CAPACITY_STATUSES = ["seats", "standing", "full"] as const;
+const CAPACITY_STATUSES = ["seats", "full"] as const;
 type CapacityStatus = (typeof CAPACITY_STATUSES)[number];
 
 const WRITE_INTERVAL_MS = 2000;
