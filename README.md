@@ -24,7 +24,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment Variables
 
-Copy `.env.local` from the project root:
+Copy `env.example` from the project root:
 
 | Variable | Description |
 |---|---|
