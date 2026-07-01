@@ -45,7 +45,7 @@ export default function AdminPage() {
     const db = getDb();
     remove(ref(db, `buses/${busId}`));
     setConfirmRemove(null);
-  }, []);;
+  }, []);
 
   if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
   if (busesLoading) return <LoadingOverlay message="Loading admin data..." />;
