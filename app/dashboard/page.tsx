@@ -21,6 +21,13 @@ export default function DashboardPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const { removeBus } = useRemoveBusData();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!loading) { setTimedOut(false); return; }
+    const id = setTimeout(() => setTimedOut(true), 10_000);
+    return () => clearTimeout(id);
+  }, [loading]);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -54,7 +61,11 @@ export default function DashboardPage() {
   }, [buses, removeBus]);
 
   if (loading) {
-    return <LoadingOverlay message="Loading buses..." />;
+    return (
+      <LoadingOverlay
+        message={timedOut ? "Unable to connect. Please check your network." : "Loading buses..."}
+      />
+    );
   }
 
   const routeMeta = (rid: string) => ROUTES_META[rid as keyof typeof ROUTES_META];
