@@ -35,22 +35,6 @@ export default function AdminPage() {
   }, [denied, router]);
 
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
-  const [demoRunning, setDemoRunning] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/demo").then((r) => r.json()).then((d) => setDemoRunning(d.running));
-  }, []);
-
-  const toggleDemo = async () => {
-    const action = demoRunning ? "stop" : "start";
-    const res = await fetch("/api/demo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    const data = await res.json();
-    setDemoRunning(data.running);
-  };
 
   const setBusCapacity = useCallback((busId: string, status: CapacityStatus) => {
     const db = getDb();
@@ -125,37 +109,6 @@ export default function AdminPage() {
               <option key={r.id} value={r.id}>{r.name} ({r.gate})</option>
             ))}
           </select>
-        </div>
-
-        {/* Demo mode */}
-        <div
-          style={{
-            marginBottom: 16, padding: 12, borderRadius: 12,
-            background: demoRunning ? "#FFFBEB" : "#F2F2F7",
-            border: demoRunning ? "1px solid #FDE68A" : "1px solid #E5E5EA",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1C1C1E" }}>
-                Demo Mode
-              </p>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B6B6B" }}>
-                {demoRunning ? "Simulating 4 buses (DAS & TRE)" : "Starts bus simulation"}
-              </p>
-            </div>
-            <button
-              onClick={toggleDemo}
-              style={{
-                padding: "8px 18px", borderRadius: 8, border: "none",
-                fontSize: 13, fontWeight: 700, cursor: "pointer",
-                background: demoRunning ? "#EE3127" : "#22469D",
-                color: "#fff", transition: "all .12s",
-              }}
-            >
-              {demoRunning ? "Stop" : "Start"}
-            </button>
-          </div>
         </div>
 
         {/* Active buses list */}
