@@ -100,21 +100,6 @@ export default function LandingPage() {
           </div>
           <span style={{ marginLeft: "auto", fontSize: 20, color: "#C5D0F0" }}>→</span>
         </button>
-
-        <button
-          onClick={() => router.push(user ? "/admin" : "/login?redirect=/admin")}
-          style={{
-            padding: "12px 24px", borderRadius: 14,
-            background: "rgba(255,255,255,.1)", backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,.15)", cursor: "pointer",
-            fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,.7)",
-            textAlign: "center", transition: "background .15s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.15)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.1)"; }}
-        >
-          Admin Panel
-        </button>
       </div>
     </div>
   );
