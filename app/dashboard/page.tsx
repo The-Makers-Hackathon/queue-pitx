@@ -59,9 +59,11 @@ export default function DashboardPage() {
 
   const routeMeta = (rid: string) => ROUTES_META[rid as keyof typeof ROUTES_META];
 
-  const rawBuses = Object.entries(buses).filter(
-    ([, bus]) => selectedRoutes.includes(bus.route_id)
+  const filteredBuses = Object.fromEntries(
+    Object.entries(buses).filter(([, bus]) => selectedRoutes.includes(bus.route_id))
   );
+
+  const rawBuses = Object.entries(filteredBuses);
 
   const withEta = rawBuses
     .map(([id, bus]) => ({ id, bus, eta: computeETA(bus) }))
@@ -253,7 +255,60 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
-          <MapView buses={buses} />
+          <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10 }}>
+            <div ref={filterRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setFilterOpen((o) => !o)}
+                style={{
+                  padding: "8px 14px", borderRadius: 10,
+                  background: "#fff", border: "1px solid #E5E5EA",
+                  fontSize: 13, fontWeight: 700, color: "#1C1C1E",
+                  cursor: "pointer", whiteSpace: "nowrap",
+                  boxShadow: "0 2px 8px rgba(0,0,0,.1)", outline: "none",
+                }}
+              >
+                Filter ({selectedRoutes.length})
+              </button>
+              {filterOpen && (
+                <div
+                  style={{
+                    position: "absolute", top: "100%", left: 0, marginTop: 4,
+                    background: "#fff", borderRadius: 10,
+                    border: "1px solid #E5E5EA", boxShadow: "0 4px 16px rgba(0,0,0,.12)",
+                    padding: 6, zIndex: 20, minWidth: 180,
+                  }}
+                >
+                  {Object.entries(ROUTES_META).map(([rid, m]) => {
+                    const checked = selectedRoutes.includes(rid);
+                    return (
+                      <label
+                        key={rid}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8,
+                          padding: "8px 10px", borderRadius: 6, cursor: "pointer",
+                          fontSize: 13, fontWeight: 600, color: "#1C1C1E",
+                          background: checked ? "#F2F2F7" : "transparent",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleRoute(rid)}
+                          style={{ accentColor: m.color }}
+                        />
+                        {m.name}
+                      </label>
+                    );
+                  })}
+                  <div style={{ display: "flex", gap: 4, padding: "6px 10px 2px", borderTop: "1px solid #E5E5EA", marginTop: 4 }}>
+                    <button onClick={setAll} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "none", background: "#22469D", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Select All</button>
+                    <button onClick={clearAll} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "none", background: "#F2F2F7", color: "#6B6B6B", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Clear</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <MapView buses={filteredBuses} />
         </div>
       )}
     </div>
