@@ -9,6 +9,7 @@ export async function fetchRoleByEmail(email: string): Promise<Role> {
 }
 
 export function canAccess(role: Role | null, page: "track" | "admin"): boolean {
+  if (process.env.NEXT_PUBLIC_ENVIRONMENT === "DEVELOPMENT") return true;
   if (page === "admin") return role === "admin";
   if (page === "track") return role === "admin" || role === "conductor";
   return false;

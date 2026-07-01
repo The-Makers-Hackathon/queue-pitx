@@ -36,6 +36,7 @@ Copy `.env.local` from the project root:
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase sender ID |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app ID |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JS API key |
+| `NEXT_PUBLIC_ENVIRONMENT` | `DEVELOPMENT` disables RBAC; `PRODUCTION` enforces it |
 
 ## Firebase Schema
 
