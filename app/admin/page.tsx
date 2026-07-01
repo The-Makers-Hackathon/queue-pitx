@@ -10,7 +10,7 @@ import { canAccess } from "@/lib/roles";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { relativeTime } from "@/lib/algorithms";
 import { useAuth } from "@/components/AuthProvider";
-import { getDb, ref, set } from "@/lib/firebase";
+import { getDb, ref, set, remove } from "@/lib/firebase";
 
 const ROUTES = Object.entries(ROUTES_META).map(([id, m]) => ({ id, ...m }));
 
@@ -34,10 +34,18 @@ export default function AdminPage() {
     if (denied) router.replace("/unauthorized");
   }, [denied, router]);
 
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+
   const setBusCapacity = useCallback((busId: string, status: CapacityStatus) => {
     const db = getDb();
     set(ref(db, `buses/${busId}/capacity_status`), status);
   }, []);
+
+  const removeBus = useCallback((busId: string) => {
+    const db = getDb();
+    remove(ref(db, `buses/${busId}`));
+    setConfirmRemove(null);
+  }, []);;
 
   if (authLoading || !user || (user && roleLoading) || denied) return <LoadingOverlay message="Checking access..." />;
   if (busesLoading) return <LoadingOverlay message="Loading admin data..." />;
@@ -143,7 +151,7 @@ export default function AdminPage() {
                     <span style={{ fontSize: 12, color: "#6B6B6B", fontWeight: 600 }}>
                       {bus.lat.toFixed(4)}, {bus.lng.toFixed(4)}
                     </span>
-                    <div style={{ display: "flex", gap: 4 }}>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       {CAPS.map((cap) => (
                         <button
                           key={cap.id}
@@ -159,6 +167,42 @@ export default function AdminPage() {
                           {cap.icon} {cap.label}
                         </button>
                       ))}
+                      {confirmRemove === id ? (
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button
+                            onClick={() => removeBus(id)}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: "none",
+                              fontSize: 11, fontWeight: 700, cursor: "pointer",
+                              background: "#FEF0EF", color: "#EE3127",
+                            }}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setConfirmRemove(null)}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: "none",
+                              fontSize: 11, fontWeight: 700, cursor: "pointer",
+                              background: "#F2F2F7", color: "#6B6B6B",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmRemove(id)}
+                          style={{
+                            padding: "6px 10px", borderRadius: 8, border: "none",
+                            fontSize: 11, fontWeight: 700, cursor: "pointer",
+                            background: "#FEF0EF", color: "#EE3127",
+                            transition: "all .12s",
+                          }}
+                        >
+                          ✕ Stop
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
