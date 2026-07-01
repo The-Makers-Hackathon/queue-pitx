@@ -10,8 +10,6 @@ export const ROUTE_LABELS: Record<string, string> = {
   TRE: "Trece Martires",
 };
 
-export const AVG_BOARDING_TIME = 0.5;
-
 export const ROUTE_PATHS: Record<string, { lat: number; lng: number }[]> = {
   DAS: [
     { lat: 14.50933, lng: 120.99143 },

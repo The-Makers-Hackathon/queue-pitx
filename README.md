@@ -48,12 +48,7 @@ Copy `.env.local` from the project root:
       "heading": 90,
       "speed": 25.5,
       "timestamp": 1719500000000,
-      "route_id": "DAS"
-    }
-  },
-  "queues": {
-    "{routeId}": {
-      "queue_length": 18,
+      "route_id": "DAS",
       "capacity_status": "seats"
     }
   }
@@ -61,16 +56,16 @@ Copy `.env.local` from the project root:
 ```
 
 Route IDs: `DAS` (Dasmariñas), `TRE` (Trece Martires).
-Capacity status: `seats` | `standing` | `full`.
+Capacity status: `seats` | `standing` | `full` (per bus).
 
 ## Routes
 
 | Path | Role | Auth |
 |---|---|---|
 | `/` | Landing / role selection | No |
-| `/dashboard` | Commuter — queue panel + live map | No |
+| `/dashboard` | Commuter — bus list + live map | No |
 | `/track` | Conductor — GPS broadcast + capacity | Yes (Google) |
-| `/admin` | Admin — queue overrides | Yes (Google) |
+| `/admin` | Admin — manage buses and capacities | Yes (Google) |
 | `/login` | Google OAuth sign-in | No |
 
 ## Role-Based Access Control
@@ -112,7 +107,7 @@ pnpm start     # Start production server
 pnpm lint      # ESLint
 ```
 
-Run `npx tsx scripts/simulate.ts` to populate the RTDB with demo bus positions and queue data.
+Run `pnpm dlx tsx --env-file=.env.local scripts/simulate.ts` to populate RTDB with demo bus positions and capacity data.
 
 ## Design System
 

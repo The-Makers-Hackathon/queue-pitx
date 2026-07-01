@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getDb, ref, onValue, set, remove } from "./firebase";
-import { BusPosition, QueueData } from "./types";
+import { BusPosition } from "./types";
 
 function useRealtimeValue<T>(path: string): { data: Record<string, T>; loading: boolean } {
   const [data, setData] = useState<Record<string, T>>({});
@@ -39,11 +39,6 @@ export function useBuses() {
   return { buses: data, loading };
 }
 
-export function useQueues() {
-  const { data, loading } = useRealtimeValue<QueueData>("queues");
-  return { queues: data, loading };
-}
-
 export function useFirebaseStatus() {
   const [connected, setConnected] = useState(false);
 
@@ -61,26 +56,18 @@ export function useFirebaseStatus() {
   return { connected };
 }
 
-export function useSetQueueValue(routeId: string) {
+export function useSetBusCapacity(busId: string) {
   const db = getDb();
-
-  const setQueueLength = useCallback(
-    (length: number) => {
-      const queueRef = ref(db, `queues/${routeId}/queue_length`);
-      set(queueRef, Math.max(0, Math.min(50, Math.round(length))));
-    },
-    [db, routeId]
-  );
 
   const setCapacityStatus = useCallback(
     (status: string) => {
-      const statusRef = ref(db, `queues/${routeId}/capacity_status`);
+      const statusRef = ref(db, `buses/${busId}/capacity_status`);
       set(statusRef, status);
     },
-    [db, routeId]
+    [db, busId]
   );
 
-  return { setQueueLength, setCapacityStatus };
+  return { setCapacityStatus };
 }
 
 export function useTracker() {
@@ -130,20 +117,20 @@ export function usePublishPosition() {
   const lastPublishRef = useRef(0);
 
   const publish = useCallback(
-    (busId: string, routeId: string, pos: GeolocationPosition) => {
+    (busId: string, routeId: string, pos: GeolocationPosition, capacityStatus?: string) => {
       const now = Date.now();
       if (now - lastPublishRef.current < 2000) return;
       lastPublishRef.current = now;
 
       const busRef = ref(db, `buses/${busId}`);
-      set(busRef, {
+      const data: Record<string, unknown> = {
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
-        heading: pos.coords.heading ?? 0,
-        speed: pos.coords.speed ?? 0,
         timestamp: new Date().toISOString(),
         route_id: routeId,
-      });
+      };
+      if (capacityStatus) data.capacity_status = capacityStatus;
+      set(busRef, data);
     },
     [db]
   );

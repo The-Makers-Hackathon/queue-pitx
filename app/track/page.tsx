@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getDb, ref, remove } from "@/lib/firebase";
-import { useTracker, usePublishPosition, useSetQueueValue, useRemoveBusData } from "@/lib/hooks";
+import { useTracker, usePublishPosition, useSetBusCapacity, useRemoveBusData } from "@/lib/hooks";
 import { ROUTES_META, CAPS } from "@/lib/design";
 import type { CapacityStatus } from "@/lib/design";
 import { canAccess } from "@/lib/roles";
@@ -19,7 +18,7 @@ export default function TrackPage() {
   const [busId, setBusId] = useState("1");
   const { position, error, watching, startTracking, stopTracking } = useTracker();
   const { publish } = usePublishPosition();
-  const { setCapacityStatus } = useSetQueueValue(routeId);
+  const { setCapacityStatus } = useSetBusCapacity(busId);
   const { removeBus } = useRemoveBusData();
   const [capacity, setCapacity] = useState<CapacityStatus>("seats");
   const prevPosRef = useRef<GeolocationPosition | null>(null);
@@ -29,11 +28,11 @@ export default function TrackPage() {
 
   useEffect(() => {
     if (position && watching) {
-      publish(busId, routeId, position);
+      publish(busId, routeId, position, capacity);
       prevPosRef.current = position;
       setPublishedCount((c) => c + 1);
     }
-  }, [position, watching, busId, routeId, publish]);
+  }, [position, watching, busId, routeId, capacity, publish]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -56,7 +55,6 @@ export default function TrackPage() {
 
   const handleStop = () => {
     removeBus(busId);
-    remove(ref(getDb(), `queues/${routeId}/capacity_status`));
     stopTracking();
   };
 

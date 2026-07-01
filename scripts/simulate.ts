@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, get, child } from "firebase/database";
+import { getDatabase, ref, set } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -45,10 +45,13 @@ const BUSES = [
   { id: "4", route: "TRE", stagger: 3 },
 ];
 
-const WRITE_INTERVAL_MS = 2000;
-const QUEUE_UPDATE_INTERVAL_MS = 30000;
+const CAPACITY_STATUSES = ["seats", "standing", "full"] as const;
+type CapacityStatus = (typeof CAPACITY_STATUSES)[number];
 
-const queueState: Record<string, { length: number; seed: number }> = {};
+const WRITE_INTERVAL_MS = 2000;
+const CAPACITY_UPDATE_INTERVAL_MS = 30000;
+
+const busCapacities: Record<string, CapacityStatus> = {};
 
 async function writeBusPosition(
   db: ReturnType<typeof getDatabase>,
@@ -61,56 +64,20 @@ async function writeBusPosition(
 
   const idx = waypointIndex % path.length;
   const waypoint = path[idx];
-  const nextIdx = (idx + 1) % path.length;
-  const next = path[nextIdx];
 
-  const dLng = ((next.lng - waypoint.lng) * Math.PI) / 180;
-  const lat1 = (waypoint.lat * Math.PI) / 180;
-  const lat2 = (next.lat * Math.PI) / 180;
-  const x = Math.sin(dLng) * Math.cos(lat2);
-  const y =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-  let heading = (Math.atan2(x, y) * 180) / Math.PI;
-  heading = (heading + 360) % 360;
+  if (!busCapacities[busId]) {
+    busCapacities[busId] = CAPACITY_STATUSES[Math.floor(Math.random() * CAPACITY_STATUSES.length)];
+  }
 
-  const speed = 25 + Math.random() * 10;
-
-  const busData = {
+  const busData: Record<string, unknown> = {
     lat: waypoint.lat,
     lng: waypoint.lng,
-    heading,
-    speed: Math.round(speed * 10) / 10,
     timestamp: new Date().toISOString(),
     route_id: routeId,
+    capacity_status: busCapacities[busId],
   };
 
   await set(ref(db, `buses/${busId}`), busData);
-}
-
-async function writeQueueLength(
-  db: ReturnType<typeof getDatabase>,
-  routeId: string
-) {
-  if (!queueState[routeId]) {
-    queueState[routeId] = {
-      length: Math.floor(Math.random() * 20) + 5,
-      seed: Math.random(),
-    };
-  }
-
-  const state = queueState[routeId];
-  const delta = Math.floor(Math.random() * 11) - 5;
-  state.length = Math.max(0, Math.min(50, state.length + delta));
-  state.seed = Math.random();
-
-  const snapshot = await get(child(ref(db), `queues/${routeId}/capacity_status`));
-  const currentStatus = snapshot.val() || "seats";
-
-  await set(ref(db, `queues/${routeId}`), {
-    queue_length: state.length,
-    capacity_status: currentStatus,
-  });
 }
 
 async function main() {
@@ -119,7 +86,7 @@ async function main() {
 
   console.log("=== GPS Simulation Engine Started ===");
   console.log(`Writing every ${WRITE_INTERVAL_MS}ms for ${BUSES.length} buses`);
-  console.log(`Queue updates every ${QUEUE_UPDATE_INTERVAL_MS}ms`);
+  console.log(`Capacity updates every ${CAPACITY_UPDATE_INTERVAL_MS}ms`);
 
   const busIndices: Record<string, number> = {};
   for (const bus of BUSES) {
@@ -138,14 +105,16 @@ async function main() {
   }, WRITE_INTERVAL_MS);
 
   setInterval(async () => {
-    for (const routeId of Object.keys(ROUTE_PATHS)) {
+    for (const bus of BUSES) {
       try {
-        await writeQueueLength(db, routeId);
+        const status = CAPACITY_STATUSES[Math.floor(Math.random() * CAPACITY_STATUSES.length)];
+        busCapacities[bus.id] = status;
+        await set(ref(db, `buses/${bus.id}/capacity_status`), status);
       } catch (err) {
-        console.error(`Failed to update queue for ${routeId}:`, err);
+        console.error(`Failed to update capacity for ${bus.id}:`, err);
       }
     }
-  }, QUEUE_UPDATE_INTERVAL_MS);
+  }, CAPACITY_UPDATE_INTERVAL_MS);
 
   console.log("Simulation running. Press Ctrl+C to stop.");
 }
