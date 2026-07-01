@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useBuses } from "@/lib/hooks";
+import { useBuses, useRemoveBusData } from "@/lib/hooks";
+import { isDataStale } from "@/lib/algorithms";
 import { ROUTES_META } from "@/lib/design";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import BusCard from "@/components/BusCard";
@@ -14,6 +15,18 @@ export default function DashboardPage() {
   const router = useRouter();
   const { buses, loading } = useBuses();
   const [tab, setTab] = useState<"buses" | "map">("buses");
+  const { removeBus } = useRemoveBusData();
+
+  useEffect(() => {
+    const cleanup = () => {
+      for (const [id, bus] of Object.entries(buses)) {
+        if (isDataStale(bus.timestamp)) removeBus(id);
+      }
+    };
+    cleanup();
+    const id = setInterval(cleanup, 30_000);
+    return () => clearInterval(id);
+  }, [buses, removeBus]);
 
   if (loading) {
     return <LoadingOverlay message="Loading buses..." />;

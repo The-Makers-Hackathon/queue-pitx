@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useReducer } from "react";
 import { BusPosition } from "@/lib/types";
 import { ROUTES_META } from "@/lib/design";
 import { computeETA, relativeTime } from "@/lib/algorithms";
@@ -11,6 +12,13 @@ interface BusCardProps {
 }
 
 export default function BusCard({ busId, bus }: BusCardProps) {
+  const [, tick] = useReducer((x: number) => x + 1, 0);
+
+  useEffect(() => {
+    const id = setInterval(tick, 15_000);
+    return () => clearInterval(id);
+  }, []);
+
   const meta = ROUTES_META[bus.route_id as keyof typeof ROUTES_META];
   if (!meta) return null;
 
