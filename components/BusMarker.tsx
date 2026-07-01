@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { OverlayView } from "@react-google-maps/api";
 
 interface BusMarkerProps {
@@ -15,11 +15,50 @@ interface BusMarkerProps {
 
 export default function BusMarker({ busId, lat, lng, color, pulse = false, routeLabel = "", eta = null }: BusMarkerProps) {
   const [showTip, setShowTip] = useState(false);
+  const [displayPos, setDisplayPos] = useState({ lat, lng });
+  const animRef = useRef<number | null>(null);
   const pixelOffset = useMemo(() => ({ x: 0, y: -30 }), []);
+
+  useEffect(() => {
+    const from = displayPos;
+    const to = { lat, lng };
+
+    const dx = to.lat - from.lat;
+    const dy = to.lng - from.lng;
+    if (dx === 0 && dy === 0) return;
+    if (Math.abs(dx) < 0.00001 && Math.abs(dy) < 0.00001) {
+      setDisplayPos(to);
+      return;
+    }
+
+    const duration = 1200;
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+
+      setDisplayPos({
+        lat: from.lat + dx * ease,
+        lng: from.lng + dy * ease,
+      });
+
+      if (t < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    if (animRef.current !== null) cancelAnimationFrame(animRef.current);
+    animRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animRef.current !== null) cancelAnimationFrame(animRef.current);
+    };
+  }, [lat, lng]);
 
   return (
     <OverlayView
-      position={{ lat, lng }}
+      position={displayPos}
       mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
       getPixelPositionOffset={() => pixelOffset}
     >
